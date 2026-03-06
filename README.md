@@ -10,6 +10,9 @@
   - Shadowsocks
   - SOCKS5
   - HTTP
+- **多传输方式与性能优化**
+  - 同时支持 **WebSocket** 和 **xHTTP** 传输方式；
+  - 独家采用优化的 `manualPipe` 函数进行流量转发，相比传统stream流式的 `pipeTo` ，CPU 开销大幅降低 **6 倍**。
 - **WASM 加速解析**
   - 将复杂的协议解析、节点模板拼装、订阅转换前处理等逻辑封装在 `protocol.wasm` 中；
   - 使用 Rust 编写并编译为 WebAssembly，由 `_worker.js` 在 Worker 侧调用；
