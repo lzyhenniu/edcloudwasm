@@ -34,7 +34,7 @@ const dohEndpoints = ['https://cloudflare-dns.com/dns-query', 'https://dns.googl
 const dohNatEndpoints = ['https://cloudflare-dns.com/dns-query', 'https://dns.google/resolve'];
 const proxyIpAddrs = {EU: 'ProxyIP.DE.CMLiussss.net', AS: 'ProxyIP.SG.CMLiussss.net', JP: 'ProxyIP.JP.CMLiussss.net', US: 'ProxyIP.US.CMLiussss.net'};//分区域proxyip
 const finallyProxyHost = 'ProxyIP.CMLiussss.net';//兜底proxyip
-// 订阅和面板使用的优选ip地址
+// 订阅和面板使用的优选ip地址，可支持ip:port#name格式
 const ipListAll = [
     '172.64.151.241', '172.64.153.2', '104.18.39.123', '104.18.42.218', '172.64.154.125', '104.18.36.15', '172.64.145.202', '172.64.149.99',
     '104.18.33.131', '172.64.145.93', '172.64.151.221', '104.18.36.35', '172.64.145.18', '172.64.145.38', '104.18.34.254', '104.18.42.163'
@@ -151,6 +151,15 @@ const parseHostPort = (addr, defaultPort) => {
         port = addr.substring(idx + 1);
     }
     return [host, (port = parseInt(port), isNaN(port) ? defaultPort : port)];
+};
+const parseSubNode = (entry) => {
+    const raw = (entry || '').trim();
+    if (!raw) return null;
+    const hashIndex = raw.indexOf('#');
+    const endpoint = hashIndex === -1 ? raw : raw.slice(0, hashIndex).trim();
+    const customName = hashIndex === -1 ? '' : raw.slice(hashIndex + 1).trim();
+    const [ip, portNum] = parseHostPort(endpoint || raw, 443);
+    return {ip, port: String(portNum), name: customName || ip};
 };
 const parseAuthString = (authParam) => {
     let username, password, hostStr;
@@ -746,7 +755,11 @@ const getSub = async (request, url, uuid) => {
     const processTemplate = (index) => {
         if (cachedTemplates[index]) {
             const tmpl = cachedTemplates[index].replaceAll("{{HOST}}", host).replaceAll("{{PATH}}", encPath);
-            ipListAll.forEach(ip => parts.push(tmpl.replaceAll("{{IP}}", ip)));
+            ipListAll.forEach(entry => {
+                const node = parseSubNode(entry);
+                if (!node) return;
+                parts.push(tmpl.replaceAll("{{IP}}", node.ip).replaceAll("{{port}}", node.port).replaceAll("{{name}}", node.name));
+            });
         }
     };
     const addNodes = (base) => {
